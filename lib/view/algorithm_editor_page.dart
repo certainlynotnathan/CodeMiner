@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../app/theme.dart';
 import '../controllers/game_manager.dart';
-import 'documentation_page.dart'; 
+import 'documentation_page.dart';
 
 class AlgorithmEditorPage extends StatefulWidget {
   final GameManager gameManager;
-  final VoidCallback? pauseTimer;    // <-- callback to pause game timer
-  final VoidCallback? resumeTimer;   // <-- callback to resume game timer
+  final VoidCallback? pauseTimer; // <-- callback to pause game timer
+  final VoidCallback? resumeTimer; // <-- callback to resume game timer
 
   const AlgorithmEditorPage({
     super.key,
@@ -53,7 +54,7 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.brown.shade700,
+      backgroundColor: AppTheme.accentBrown,
       insetPadding: const EdgeInsets.all(16),
       child: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
@@ -63,12 +64,10 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
             // Tabs for algorithms
             TabBar(
               controller: _tabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.brown.shade300,
-              indicatorColor: Colors.white,
-              tabs: _controllers.keys
-                  .map((name) => Tab(text: name))
-                  .toList(),
+              labelColor: AppTheme.textPrimary,
+              unselectedLabelColor: AppTheme.lightBrown,
+              indicatorColor: AppTheme.textPrimary,
+              tabs: _controllers.keys.map((name) => Tab(text: name)).toList(),
             ),
             const SizedBox(height: 8),
 
@@ -79,7 +78,7 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
                 children: _controllers.entries.map((entry) {
                   return Container(
                     padding: const EdgeInsets.all(8),
-                    color: Colors.brown.shade600,
+                    color: AppTheme.buttonBrown,
                     child: TextField(
                       controller: entry.value,
                       style: const TextStyle(color: Colors.white),
@@ -88,7 +87,7 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: "Write your algorithm here...",
-                        hintStyle: TextStyle(color: Colors.brown.shade300),
+                        hintStyle: TextStyle(color: AppTheme.lightBrown),
                       ),
                     ),
                   );
@@ -108,15 +107,12 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
 
                     // Navigate to DocumentationPage
                     await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => DocumentationPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => DocumentationPage()),
                     );
-
                   },
                   child: const Text(
                     "View Documentation",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppTheme.textPrimary),
                   ),
                 ),
 
@@ -135,7 +131,7 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
                   },
                   child: const Text(
                     "Close",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppTheme.textPrimary),
                   ),
                 ),
               ],

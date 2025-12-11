@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app/theme.dart';
 import '../controllers/ranking_manager.dart';
 
 class RankingPage extends StatelessWidget {
@@ -11,40 +12,36 @@ class RankingPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Rankings"),
-        backgroundColor: Colors.brown.shade900,
-        leading: BackButton(color: Colors.white),
+        backgroundColor: AppTheme.darkBrown,
+        leading: BackButton(color: AppTheme.textPrimary),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF5D4037),
-              Color(0xFF8D6E63),
-              Color(0xFFFFCC80),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: ListView.builder(
           itemCount: rankings.length,
           itemBuilder: (context, index) {
             final stat = rankings[index];
             return Card(
-              color: Colors.brown.shade700,
+              color: AppTheme.accentBrown,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.amber.shade400,
+                  backgroundColor: AppTheme.amberAccent,
                   child: Text(
                     "${index + 1}",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
-                title: Text(stat.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                title: Text(
+                  stat.name,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 subtitle: Text(
-                  "Gold: ${stat.money}  •  Time: ${stat.elapsedSeconds ~/ 60}:${(stat.elapsedSeconds % 60).toString().padLeft(2,'0')}",
-                  style: const TextStyle(color: Colors.white70),
+                  "Gold: ${stat.money}  •  Time: ${stat.elapsedSeconds ~/ 60}:${(stat.elapsedSeconds % 60).toString().padLeft(2, '0')}",
+                  style: const TextStyle(color: AppTheme.textSecondary),
                 ),
               ),
             );

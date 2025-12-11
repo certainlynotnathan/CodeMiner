@@ -1,4 +1,5 @@
-// controllers/game_manager.dart
+/// GameManager - Core controller for all game logic and state
+/// Manages the grid, player, money, commands, and algorithm execution
 import '../models/grid.dart';
 import '../models/minerals.dart';
 import '../models/player.dart';
@@ -7,51 +8,87 @@ import 'dart:math';
 import 'package:path_provider/path_provider.dart';
 
 class GameManager {
+  // === GAME STATE ===
+
+  /// The mining grid containing all cells and minerals
   late GameGrid grid;
-  int elapsedTime = 0; // in seconds
+
+  /// Elapsed game time in seconds (legacy - not actively used)
+  int elapsedTime = 0;
+
+  /// Current amount of gold the player has
   int money = 0;
+
+  /// The player character (position and sprite)
   late Player player;
-  List<String> commandQueue = []; // ["moveUp", "moveDown", etc.]
+
+  /// Queue of commands to execute (e.g., ["moveUp", "mine", "moveRight"])
+  List<String> commandQueue = [];
+
+  /// Whether commands are currently being executed
   bool isRunning = false;
+
+  /// Stored user algorithms {"Algorithm 1": "moveUp\nmine\n", ...}
   Map<String, String> algorithms = {};
+
+  /// Chat/log messages shown to the player
   List<String> messages = [];
+
+  /// Statistics: number of times player clicked "Run"
   int algorithmsRun = 0;
+
+  /// Statistics: total number of commands executed
   int commandsRun = 0;
+
+  /// Whether the game has ended (win or lose)
   bool gameOver = false;
-  int? timeToWin; // in seconds
-  final Random _rng = Random(); 
-  
+
+  /// Time when player won (in seconds) - null if not won yet
+  int? timeToWin;
+
+  /// Random number generator for mineral spawning
+  final Random _rng = Random();
+
+  /// Constructor - initializes a new game
+  /// [rows] and [cols] define grid size, [startingMoney] is initial gold
   GameManager({int rows = 6, int cols = 6, int startingMoney = 0}) {
-    // Initialize the grid
+    // Create the grid
     grid = GameGrid(rows: rows, cols: cols);
 
-    // Set starting money
+    // Set player's starting money
     money = startingMoney;
+
+    // Place player at bottom-left corner
     player = Player(row: grid.rows - 1, col: 0);
+
+    // Fill grid with random minerals
     populateGridRandomly();
   }
 
-  /// Resets the game state
+  /// Resets the game to initial state
+  /// Preserves grid dimensions but clears all progress
   void reset({int startingMoney = 0}) {
     grid = GameGrid(rows: grid.rows, cols: grid.cols);
     elapsedTime = 0;
     money = startingMoney;
   }
 
-  /// Increment the elapsed time
+  /// Increments elapsed time by 1 second
+  /// Checks for time-based lose condition (10 minutes)
   void tick() {
     elapsedTime++;
-    // Check lose condition (10 minutes)
+    // Check if player ran out of time
     if (!gameOver && elapsedTime >= 10 * 60) {
       gameOver = true;
       addMessage("Game Over! Time limit reached.");
     }
   }
 
-  /// Add money
+  /// Adds gold to the player's total
+  /// Checks for win condition (1000 gold)
   void addMoney(int amount) {
     money += amount;
-    // Check win condition
+    // Check if player reached win condition
     if (!gameOver && money >= 1000) {
       gameOver = true;
       timeToWin = elapsedTime;
@@ -59,17 +96,20 @@ class GameManager {
     }
   }
 
-  /// Mines the mineral below the player (ignores dirt)
-  /// Mines the topmost mineral in the player's current cell (ignores dirt).
+  /// Mines the topmost mineral at the player's current position
+  /// Ignores dirt (only mines valuable minerals)
+  /// Returns a message describing what was mined
   String mine() {
     final cell = grid.getCell(player.row, player.col);
 
-    // if there is a mineral above dirt
+    // Check if there's a mineral above the dirt layer
     if (cell.stack.length > 1) {
-      final mineral = cell.stack.last; // topmost mineral
+      final mineral = cell.stack.last; // Get topmost mineral
 
       if (mineral.name != "Dirt") {
+        // Add/subtract gold based on mineral value
         addMoney(mineral.value);
+        // Remove the mined mineral from the cell
         cell.stack.removeLast();
         return "Mined ${mineral.name} for ${mineral.value} gold.";
       }
@@ -78,70 +118,123 @@ class GameManager {
     return "Mined nothing.";
   }
 
-
-  /// ⭐ Populates the entire grid with random minerals
+  /// Populates the entire grid with random minerals
+  /// Each cell gets dirt + possibly one random ore
   void populateGridRandomly() {
     for (int r = 0; r < grid.rows; r++) {
       for (int c = 0; c < grid.cols; c++) {
         final cell = grid.cells[r][c];
 
-        cell.stack.clear();      // ⭐ FIXED: mutate list instead of stack = [...]
+        // Clear and reset to dirt
+        cell.stack.clear();
         cell.stack.add(dirtMineral);
 
+        // Try to add a random mineral on top
         final Mineral? drop = getRandomMineral();
         if (drop != null) {
-          cell.addMineral(drop); // ⭐ uses existing addMineral()
+          cell.addMineral(drop);
         }
       }
     }
     addMessage("Grid populated with random minerals.");
   }
 
-
-  /// ⭐ Returns a mineral OR null (empty space)
+  /// Returns a random mineral or null (empty space)
+  /// Uses weighted probabilities for different rarity tiers:
+  /// - 30% nothing (empty)
+  /// - 30% Coal (common)
+  /// - 25% Copper (common)
+  /// - 10% Iron (uncommon)
+  /// - 3.5% Gold (rare)
+  /// - 1% Bomb (rare hazard)
+  /// - 0.5% Diamond (legendary)
   Mineral? getRandomMineral() {
-    int roll = _rng.nextInt(1000); // precise probability control
+    int roll = _rng.nextInt(1000); // Roll 0-999 for precise probabilities
 
-    if (roll < 300) return null;                          // 30% nothing
-    if (roll < 600) return mineralsByName["Coal"];        // 30% Coal (common)
-    if (roll < 850) return mineralsByName["Copper"];      // 25% Copper (common)
-    if (roll < 950) return mineralsByName["Iron"];        // 10% Iron (uncommon)
-    if (roll < 985) return mineralsByName["Gold"];        // 3.5% Gold (rare)
-    if (roll < 995) return mineralsByName["Bomb"];        // 1% Bomb (rare)
-    return mineralsByName["Diamond"];                     // 0.5% Diamond (super rare)
+    if (roll < 300) return null; // 30% empty
+    if (roll < 600) return mineralsByName["Coal"]; // 30% Coal
+    if (roll < 850) return mineralsByName["Copper"]; // 25% Copper
+    if (roll < 950) return mineralsByName["Iron"]; // 10% Iron
+    if (roll < 985) return mineralsByName["Gold"]; // 3.5% Gold
+    if (roll < 995) return mineralsByName["Bomb"]; // 1% Bomb
+    return mineralsByName["Diamond"]; // 0.5% Diamond
   }
+
+  /// Lookup map for minerals by name
+  /// Used by getRandomMineral() for weighted spawning
   final Map<String, Mineral> mineralsByName = {
     "Dirt": dirtMineral,
-    "Coal": Mineral(name: "Coal", assetPath: "assets/images/minerals/coalore.png", value: 10),
-    "Copper": Mineral(name: "Copper Ore", assetPath: "assets/images/minerals/copperore.png", value: 20),
-    "Iron": Mineral(name: "Iron Ore", assetPath: "assets/images/minerals/ironore.png", value: 50),
-    "Gold": Mineral(name: "Gold Ore", assetPath: "assets/images/minerals/goldore.png", value: 80),
-    "Diamond": Mineral(name: "Diamond", assetPath: "assets/images/minerals/diamondore.png", value: 100),
-    "Bomb": Mineral(name: "Bomb", assetPath: "assets/images/minerals/bomb.png", value: -100),
+    "Coal": Mineral(
+      name: "Coal",
+      assetPath: "assets/images/minerals/coalore.png",
+      value: 10,
+    ),
+    "Copper": Mineral(
+      name: "Copper Ore",
+      assetPath: "assets/images/minerals/copperore.png",
+      value: 20,
+    ),
+    "Iron": Mineral(
+      name: "Iron Ore",
+      assetPath: "assets/images/minerals/ironore.png",
+      value: 50,
+    ),
+    "Gold": Mineral(
+      name: "Gold Ore",
+      assetPath: "assets/images/minerals/goldore.png",
+      value: 80,
+    ),
+    "Diamond": Mineral(
+      name: "Diamond",
+      assetPath: "assets/images/minerals/diamondore.png",
+      value: 100,
+    ),
+    "Bomb": Mineral(
+      name: "Bomb",
+      assetPath: "assets/images/minerals/bomb.png",
+      value: -100,
+    ),
   };
-  /// ⭐ Refresh command: repopulates every tile with NEW minerals
+
+  /// Refresh command - completely repopulates the grid with new random minerals
+  /// Used when player executes the "refresh" command
   String refreshGrid() {
     populateGridRandomly();
     return "Grid refreshed with new minerals!";
   }
 
-  /// Add a command to the queue
+  /// Adds a command to the execution queue
   void addCommand(String command) {
     commandQueue.add(command);
   }
-  /// Remove money
+
+  /// Deducts gold from the player (used for future shop features)
+  /// Prevents money from going negative
   void spendMoney(int amount) {
     money -= amount;
     if (money < 0) money = 0;
   }
 
-  Future<void> runCommands(Function onUpdate, {Duration cooldown = const Duration(milliseconds: 500)}) async {
+  /// Executes all commands in the queue sequentially with visual feedback
+  /// [onUpdate] callback is called after each command to refresh the UI
+  /// [cooldown] is the delay between commands (default 500ms for visibility)
+  Future<void> runCommands(
+    Function onUpdate, {
+    Duration cooldown = const Duration(milliseconds: 500),
+  }) async {
+    // Prevent multiple simultaneous executions
     if (isRunning) return;
     isRunning = true;
-    algorithmsRun++; // increment algorithm run count
+
+    // Track that an algorithm was run
+    algorithmsRun++;
+
+    // Execute each command in sequence
     while (commandQueue.isNotEmpty) {
       String command = commandQueue.removeAt(0);
-      commandsRun++; // increment commands run
+      commandsRun++; // Track total commands executed
+
+      // Execute the appropriate action based on command type
       switch (command) {
         case "moveUp":
           player.moveUp(grid.rows);
@@ -164,7 +257,7 @@ class GameManager {
           break;
 
         case "mine":
-          String result = mine();   // mine() now returns a message
+          String result = mine();
           addMessage(result);
           break;
 
@@ -172,17 +265,22 @@ class GameManager {
           String msg = refreshGrid();
           addMessage(msg);
           break;
+
         default:
-          // Stop execution if command is unrecognized
+          // Unknown command - show error and stop execution
           addMessage("Syntax Error: \"$command\" not recognized.");
           isRunning = false;
-          onUpdate(); // refresh UI to show message immediately
-          return;     // stop the loop immediately
+          onUpdate(); // Show error message immediately
+          return; // Stop execution
       }
 
-      onUpdate(); // refresh UI
+      // Update UI after each command
+      onUpdate();
+
+      // Wait before next command (for visual clarity)
       await Future.delayed(cooldown);
-      // Stop if game is over
+
+      // Stop if game ended
       if (gameOver) {
         isRunning = false;
         return;
@@ -192,6 +290,9 @@ class GameManager {
     isRunning = false;
   }
 
+  /// Saves an algorithm to local storage
+  /// [name] is the algorithm identifier (e.g., "Algorithm 1")
+  /// [content] is the algorithm code as text
   Future<void> saveAlgorithm(String name, String content) async {
     final dir = await getApplicationDocumentsDirectory();
     final file = File('${dir.path}/$name.txt');
@@ -199,10 +300,13 @@ class GameManager {
     algorithms[name] = content;
   }
 
-  // Load algorithm from a file
+  /// Loads an algorithm from local storage
+  /// Returns empty string if algorithm doesn't exist
   Future<String> loadAlgorithm(String name) async {
+    // Check memory cache first
     if (algorithms.containsKey(name)) return algorithms[name]!;
 
+    // Try loading from file
     final dir = await getApplicationDocumentsDirectory();
     final file = File('${dir.path}/$name.txt');
     if (await file.exists()) {
@@ -213,7 +317,15 @@ class GameManager {
     return '';
   }
 
+  /// Parses algorithm text and loads commands into the execution queue
+  /// Supports basic commands and "loop X" ... "end" syntax
+  /// Example algorithm:
+  ///   loop 3
+  ///   moveRight
+  ///   mine
+  ///   end
   void loadAlgorithmIntoQueue(String content) {
+    // Split into individual lines and clean up
     List<String> lines = content
         .split('\n')
         .map((line) => line.trim())
@@ -226,7 +338,7 @@ class GameManager {
     while (i < lines.length) {
       String line = lines[i];
 
-      // ⭐ Detect "loop X"
+      // Check for loop syntax: "loop X"
       if (line.startsWith("loop")) {
         List<String> parts = line.split(" ");
         if (parts.length < 2) {
@@ -234,13 +346,14 @@ class GameManager {
           return;
         }
 
+        // Parse loop count
         int count = int.tryParse(parts[1]) ?? 0;
         if (count <= 0) {
           messages.add("Syntax Error: loop count must be > 0.");
           return;
         }
 
-        // ⭐ Gather loop body
+        // Collect loop body (commands between "loop" and "end")
         i++;
         List<String> loopBody = [];
         while (i < lines.length && lines[i] != "end") {
@@ -248,17 +361,18 @@ class GameManager {
           i++;
         }
 
+        // Check if "end" was found
         if (i >= lines.length) {
           messages.add("Syntax Error: 'end' not found for loop.");
           return;
         }
 
-        // ⭐ Insert the loop body N times into queue
+        // Repeat loop body N times
         for (int k = 0; k < count; k++) {
           commandQueue.addAll(loopBody);
         }
       } else {
-        // Normal command
+        // Regular command (not a loop)
         commandQueue.add(line);
       }
 
@@ -266,10 +380,13 @@ class GameManager {
     }
   }
 
+  /// Adds a message to the game chat/log
+  /// Automatically limits chat history to 100 messages to prevent memory issues
   void addMessage(String msg) {
     messages.add(msg);
+    // Keep chat history manageable
     if (messages.length > 100) {
-      messages.removeAt(0); // prevent infinite growth
+      messages.removeAt(0);
     }
   }
 }

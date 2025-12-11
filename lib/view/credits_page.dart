@@ -27,14 +27,14 @@ class CreditsPage extends StatelessWidget {
               _buildCreditCard(
                 icon: Icons.code,
                 title: "Lead Developer",
-                subtitle: "Your Name Here",
+                subtitle: "Nathaniel Joseph A. Escuro",
                 description:
                     "Project architecture, gameplay mechanics, and core systems",
               ),
               _buildCreditCard(
                 icon: Icons.palette,
                 title: "UI/UX Design",
-                subtitle: "Design Team",
+                subtitle: "Me too",
                 description: "Interface design and user experience",
               ),
 
@@ -51,6 +51,31 @@ class CreditsPage extends StatelessWidget {
                 icon: Icons.code_rounded,
                 name: "Dart",
                 description: "Programming language",
+              ),
+
+              const SizedBox(height: 24),
+
+              // Asset Credits
+              _buildSectionTitle("Asset Credits"),
+              _buildCreditCard(
+                icon: Icons.diamond_outlined,
+                title: "Ore Assets",
+                subtitle: "Mystic Ores by KozyKay",
+                description: "Beautiful pixel art ore textures",
+              ),
+              _buildCreditCard(
+                icon: Icons.person_outline,
+                title: "Miner Character",
+                subtitle: "DK Productions",
+                description:
+                    "16-bit animated miner character\nhttps://dkproductions.itch.io/16bit-miner-animated-character",
+              ),
+              _buildCreditCard(
+                icon: Icons.landscape,
+                title: "Cave Tileset",
+                subtitle: "GTK Campos",
+                description:
+                    "Cave environment tileset\nhttps://gtkampos.itch.io/cave-tileset",
               ),
 
               const SizedBox(height: 24),

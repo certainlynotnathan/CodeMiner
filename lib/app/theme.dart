@@ -12,11 +12,15 @@ class AppTheme {
   static final Color darkBrown = Colors.brown.shade900;
   static final Color accentBrown = Colors.brown.shade700;
   static final Color buttonBrown = Colors.brown.shade600;
+  static final Color lightBrown = Colors.brown.shade300;
   static final Color amberAccent = Colors.amber.shade400;
 
   // Text Colors
   static const Color textPrimary = Colors.white;
   static const Color textSecondary = Colors.white70;
+
+  // Utility Colors
+  static const Color codeHighlightColor = Colors.greenAccent;
 
   // Background Gradient
   static const LinearGradient backgroundGradient = LinearGradient(
@@ -28,7 +32,7 @@ class AppTheme {
   /// Get the main theme for the app
   static ThemeData get themeData {
     return ThemeData(
-      fontFamily: 'PixelCraft',
+      fontFamily: 'monospace',
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: deepBrown,

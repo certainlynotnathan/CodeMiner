@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app/theme.dart';
 
 class DocumentationPage extends StatefulWidget {
   const DocumentationPage({super.key});
@@ -16,14 +17,14 @@ class _DocumentationPageState extends State<DocumentationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.brown.shade800,
+      backgroundColor: AppTheme.darkBrown,
       appBar: AppBar(
         title: const Text(
           "Documentation",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
-        backgroundColor: Colors.brown.shade900,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: AppTheme.darkBrown,
+        iconTheme: const IconThemeData(color: AppTheme.textPrimary),
       ),
 
       // --------------------
@@ -31,20 +32,26 @@ class _DocumentationPageState extends State<DocumentationPage> {
       // --------------------
       drawer: Drawer(
         child: Container(
-          color: Colors.brown.shade900,
+          color: AppTheme.darkBrown,
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               // Custom header with back button
               Container(
-                color: Colors.brown.shade700,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: AppTheme.accentBrown,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Back button
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppTheme.textPrimary,
+                      ),
                       onPressed: () {
                         Navigator.pop(context); // Close drawer
                         Navigator.pop(context); // Go back to MenuPage
@@ -53,7 +60,11 @@ class _DocumentationPageState extends State<DocumentationPage> {
                     const SizedBox(height: 4),
                     const Text(
                       "COMMANDS",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -68,7 +79,6 @@ class _DocumentationPageState extends State<DocumentationPage> {
           ),
         ),
       ),
-
 
       // --------------------
       //      CONTENT
@@ -152,7 +162,7 @@ end
   // ------------------------------
   Widget _drawerItem(String label, String key) {
     return ListTile(
-      title: Text(label, style: const TextStyle(color: Colors.white)),
+      title: Text(label, style: const TextStyle(color: AppTheme.textPrimary)),
       onTap: () {
         Navigator.pop(context); // close drawer
         _scrollToSection(key);
@@ -181,7 +191,8 @@ end
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final box = context.findRenderObject() as RenderBox?;
           if (box != null) {
-            final offset = box.localToGlobal(Offset.zero).dy +
+            final offset =
+                box.localToGlobal(Offset.zero).dy +
                 _scrollController.offset -
                 kToolbarHeight;
             _sectionOffsets[key] = offset;
@@ -195,7 +206,7 @@ end
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppTheme.textPrimary,
             ),
           ),
         );
@@ -206,12 +217,9 @@ end
   // ---------------------------------------
   //  COMMAND CARD W/ NICE STYLING
   // ---------------------------------------
-  Widget _commandCard({
-    required String name,
-    required String description,
-  }) {
+  Widget _commandCard({required String name, required String description}) {
     return Card(
-      color: Colors.brown.shade700,
+      color: AppTheme.accentBrown,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -223,12 +231,17 @@ end
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
-            Text(description,
-                style: const TextStyle(color: Colors.white70, fontSize: 15)),
+            Text(
+              description,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 15,
+              ),
+            ),
           ],
         ),
       ),
@@ -244,24 +257,34 @@ end
     required String example,
   }) {
     return Card(
-      color: Colors.brown.shade700,
+      color: AppTheme.accentBrown,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
             const SizedBox(height: 10),
-            Text(description,
-                style: const TextStyle(color: Colors.white70, fontSize: 15)),
+            Text(
+              description,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 15,
+              ),
+            ),
             const SizedBox(height: 12),
-            const Text("Example:",
-                style: TextStyle(color: Colors.white, fontSize: 16)),
+            const Text(
+              "Example:",
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+            ),
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(top: 8),
@@ -275,10 +298,10 @@ end
                 style: const TextStyle(
                   fontFamily: "Courier",
                   fontSize: 15,
-                  color: Colors.greenAccent,
+                  color: AppTheme.codeHighlightColor,
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
