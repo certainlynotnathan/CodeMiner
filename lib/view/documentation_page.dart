@@ -139,13 +139,16 @@ class _DocumentationPageState extends State<DocumentationPage> {
                   title: "loop <count> ... end",
                   description:
                       "Repeats the enclosed commands <count> times.\n"
-                      "Supports **nested** loops.",
+                      "Supports **nested** loops.\n"
+                      "💡 Tip: Use the **Auto-format** button in the editor to properly indent your code for better readability.",
                   example: """
 loop 2
     moveRight
     loop 3
         mine
+        moveDown
     end
+    moveUp
 end
 """,
                 ),

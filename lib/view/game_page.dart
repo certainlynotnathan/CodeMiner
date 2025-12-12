@@ -101,9 +101,10 @@ class _GamePageWidgetState extends State<GamePageWidget> {
           ),
           content: TextField(
             controller: controller,
+            autofocus: false, // Prevent auto-focus to avoid keyboard crash
             style: const TextStyle(color: AppTheme.textPrimary),
             decoration: const InputDecoration(
-              hintText: "Your name",
+              hintText: "Your name (optional)",
               hintStyle: TextStyle(color: AppTheme.textSecondary),
               border: InputBorder.none,
             ),
@@ -111,9 +112,10 @@ class _GamePageWidgetState extends State<GamePageWidget> {
           actions: [
             TextButton(
               onPressed: () {
-                // Prevent empty names
-                if (controller.text.trim().isEmpty) return;
-                Navigator.pop(context, controller.text.trim());
+                // Allow empty name, use default "Player"
+                String name = controller.text.trim();
+                if (name.isEmpty) name = "Player";
+                Navigator.pop(context, name);
               },
               child: const Text(
                 "Start",
@@ -131,6 +133,9 @@ class _GamePageWidgetState extends State<GamePageWidget> {
         _playerName = name;
         gameManager.addMessage("Hello, $_playerName!");
       });
+
+      // Start the timer now that the game has officially begun
+      startTimer();
     }
   }
 
@@ -604,53 +609,88 @@ class _GamePageWidgetState extends State<GamePageWidget> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Run button - executes the selected algorithm
+                              // Run/Stop button - executes or stops the selected algorithm
                               Expanded(
                                 flex: 2,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    // Get the algorithm code
-                                    String algoContent =
-                                        gameManager
-                                            .algorithms[selectedAlgorithm] ??
-                                        '';
-                                    // Load it into the command queue
-                                    gameManager.loadAlgorithmIntoQueue(
-                                      algoContent,
-                                    );
+                                    if (gameManager.isRunning) {
+                                      // Stop the currently running algorithm
+                                      gameManager.stopExecution();
+                                      setState(
+                                        () {},
+                                      ); // Refresh UI to show RUN button
+                                    } else {
+                                      // Get the algorithm code
+                                      String algoContent =
+                                          gameManager
+                                              .algorithms[selectedAlgorithm] ??
+                                          '';
 
-                                    // Execute commands with callback
-                                    gameManager.runCommands(() {
-                                      // Update selected entity if it was mined
-                                      if (selectedEntity is Mineral) {
-                                        final playerCell = gameManager.grid
-                                            .getCell(
-                                              gameManager.player.row,
-                                              gameManager.player.col,
-                                            );
-                                        if (!playerCell.stack.contains(
-                                          selectedEntity,
-                                        )) {
-                                          selectedEntity =
-                                              playerCell.stack.isNotEmpty
-                                              ? playerCell.top
-                                              : null;
-                                        }
+                                      // Check if algorithm is empty
+                                      if (algoContent.trim().isEmpty) {
+                                        gameManager.addMessage(
+                                          "Error: Algorithm '$selectedAlgorithm' is empty. Use EDIT to write an algorithm first.",
+                                        );
+                                        setState(
+                                          () {},
+                                        ); // Refresh to show message
+                                        return;
                                       }
-                                      setState(() {}); // Refresh UI
-                                    });
+
+                                      // Load it into the command queue
+                                      gameManager.loadAlgorithmIntoQueue(
+                                        algoContent,
+                                      );
+
+                                      // Execute commands with callback
+                                      gameManager
+                                          .runCommands(() {
+                                            // Update selected entity if it was mined
+                                            if (selectedEntity is Mineral) {
+                                              final playerCell = gameManager
+                                                  .grid
+                                                  .getCell(
+                                                    gameManager.player.row,
+                                                    gameManager.player.col,
+                                                  );
+                                              if (!playerCell.stack.contains(
+                                                selectedEntity,
+                                              )) {
+                                                selectedEntity =
+                                                    playerCell.stack.isNotEmpty
+                                                    ? playerCell.top
+                                                    : null;
+                                              }
+                                            }
+                                            setState(() {}); // Refresh UI
+                                          })
+                                          .then((_) {
+                                            // Algorithm finished, refresh UI to show RUN button
+                                            setState(() {});
+                                          });
+
+                                      // Immediately refresh to show STOP button
+                                      setState(() {});
+                                    }
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.buttonBrown,
+                                    backgroundColor: gameManager.isRunning
+                                        ? Colors.red.shade700
+                                        : AppTheme.buttonBrown,
                                     minimumSize: const Size(0, 50),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text(
-                                    "Run",
-                                    style: TextStyle(
-                                      color: AppTheme.textPrimary,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      gameManager.isRunning ? "Stop" : "Run",
+                                      style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontSize: 16,
+                                      ),
                                     ),
                                   ),
                                 ),

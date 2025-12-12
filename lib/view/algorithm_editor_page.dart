@@ -51,6 +51,110 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
     super.dispose();
   }
 
+  /// Indents the selected line(s) by adding 4 spaces at the start
+  void _indentSelection() {
+    final controller = _controllers.values.elementAt(_tabController.index);
+    final text = controller.text;
+    final selection = controller.selection;
+
+    if (!selection.isValid) return;
+
+    final startLine = text.substring(0, selection.start).split('\n').length - 1;
+    final endLine = text.substring(0, selection.end).split('\n').length - 1;
+
+    final lines = text.split('\n');
+    for (int i = startLine; i <= endLine && i < lines.length; i++) {
+      lines[i] = '    ${lines[i]}';
+    }
+
+    controller.text = lines.join('\n');
+    controller.selection = TextSelection(
+      baseOffset: selection.start + 4,
+      extentOffset: selection.end + (4 * (endLine - startLine + 1)),
+    );
+  }
+
+  /// Removes up to 4 spaces from the start of selected line(s)
+  void _unindentSelection() {
+    final controller = _controllers.values.elementAt(_tabController.index);
+    final text = controller.text;
+    final selection = controller.selection;
+
+    if (!selection.isValid) return;
+
+    final startLine = text.substring(0, selection.start).split('\n').length - 1;
+    final endLine = text.substring(0, selection.end).split('\n').length - 1;
+
+    final lines = text.split('\n');
+    int totalRemoved = 0;
+
+    for (int i = startLine; i <= endLine && i < lines.length; i++) {
+      final line = lines[i];
+      int spacesToRemove = 0;
+
+      for (int j = 0; j < line.length && j < 4; j++) {
+        if (line[j] == ' ') {
+          spacesToRemove++;
+        } else {
+          break;
+        }
+      }
+
+      if (spacesToRemove > 0) {
+        lines[i] = line.substring(spacesToRemove);
+        totalRemoved += spacesToRemove;
+      }
+    }
+
+    controller.text = lines.join('\n');
+    final newStart = selection.start - 4 < 0 ? 0 : selection.start - 4;
+    final newEnd = selection.end - totalRemoved < newStart
+        ? newStart
+        : selection.end - totalRemoved;
+
+    controller.selection = TextSelection(
+      baseOffset: newStart,
+      extentOffset: newEnd,
+    );
+  }
+
+  /// Auto-formats the code with proper indentation based on loop nesting
+  void _autoFormatCode() {
+    final controller = _controllers.values.elementAt(_tabController.index);
+    final text = controller.text;
+
+    final lines = text.split('\n');
+    final formattedLines = <String>[];
+    int indentLevel = 0;
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        formattedLines.add('');
+        continue;
+      }
+
+      if (trimmed == 'end') {
+        indentLevel--;
+        if (indentLevel < 0) indentLevel = 0;
+      }
+
+      formattedLines.add('${"    " * indentLevel}$trimmed');
+
+      if (trimmed.startsWith('loop ')) {
+        indentLevel++;
+      }
+    }
+
+    controller.text = formattedLines.join('\n');
+  }
+
+  /// Clears all text in the current algorithm tab
+  void _clearCurrentTab() {
+    final controller = _controllers.values.elementAt(_tabController.index);
+    controller.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -81,7 +185,12 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
                     color: AppTheme.buttonBrown,
                     child: TextField(
                       controller: entry.value,
-                      style: const TextStyle(color: Colors.white),
+                      autofocus: false, // Prevent keyboard crashes
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'monospace',
+                        fontSize: 14,
+                      ),
                       maxLines: null,
                       expands: true,
                       decoration: InputDecoration(
@@ -92,6 +201,68 @@ class _AlgorithmEditorPageState extends State<AlgorithmEditorPage>
                     ),
                   );
                 }).toList(),
+              ),
+            ),
+
+            // Formatting toolbar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              color: AppTheme.darkBrown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Indent button
+                  Tooltip(
+                    message: "Indent",
+                    child: IconButton(
+                      icon: const Icon(Icons.format_indent_increase),
+                      color: AppTheme.textPrimary,
+                      onPressed: _indentSelection,
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Unindent button
+                  Tooltip(
+                    message: "Unindent",
+                    child: IconButton(
+                      icon: const Icon(Icons.format_indent_decrease),
+                      color: AppTheme.textPrimary,
+                      onPressed: _unindentSelection,
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Auto-format button
+                  Tooltip(
+                    message: "Auto-format",
+                    child: IconButton(
+                      icon: const Icon(Icons.auto_fix_high),
+                      color: AppTheme.textPrimary,
+                      onPressed: _autoFormatCode,
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Clear button
+                  Tooltip(
+                    message: "Clear",
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      color: AppTheme.textPrimary,
+                      onPressed: _clearCurrentTab,
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ],
               ),
             ),
 

@@ -290,6 +290,14 @@ class GameManager {
     isRunning = false;
   }
 
+  /// Stops the current algorithm execution immediately
+  /// Clears the command queue and resets the running flag
+  void stopExecution() {
+    commandQueue.clear();
+    isRunning = false;
+    addMessage("Algorithm stopped by user.");
+  }
+
   /// Saves an algorithm to local storage
   /// [name] is the algorithm identifier (e.g., "Algorithm 1")
   /// [content] is the algorithm code as text
@@ -328,13 +336,22 @@ class GameManager {
     // Split into individual lines and clean up
     List<String> lines = content
         .split('\n')
-        .map((line) => line.trim())
+        .map(
+          (line) => line.trimLeft(),
+        ) // Remove leading whitespace (indentation)
         .where((line) => line.isNotEmpty)
         .toList();
 
     commandQueue.clear();
 
     int i = 0;
+    _parseLines(lines, i);
+  }
+
+  /// Recursive helper to parse lines with proper nested loop support
+  void _parseLines(List<String> lines, int startIndex) {
+    int i = startIndex;
+
     while (i < lines.length) {
       String line = lines[i];
 
@@ -356,20 +373,33 @@ class GameManager {
         // Collect loop body (commands between "loop" and "end")
         i++;
         List<String> loopBody = [];
-        while (i < lines.length && lines[i] != "end") {
-          loopBody.add(lines[i]);
+        int nestedLevel = 1; // Track nested loop depth
+
+        while (i < lines.length && nestedLevel > 0) {
+          String bodyLine = lines[i];
+
+          if (bodyLine.startsWith("loop")) {
+            nestedLevel++; // Entering nested loop
+          } else if (bodyLine == "end") {
+            nestedLevel--; // Exiting a loop
+            if (nestedLevel == 0) {
+              break; // Found matching end for our loop
+            }
+          }
+
+          loopBody.add(bodyLine);
           i++;
         }
 
         // Check if "end" was found
-        if (i >= lines.length) {
+        if (nestedLevel > 0) {
           messages.add("Syntax Error: 'end' not found for loop.");
           return;
         }
 
-        // Repeat loop body N times
+        // Repeat loop body N times, recursively parsing for nested loops
         for (int k = 0; k < count; k++) {
-          commandQueue.addAll(loopBody);
+          _parseLines(loopBody, 0);
         }
       } else {
         // Regular command (not a loop)
@@ -377,6 +407,11 @@ class GameManager {
       }
 
       i++;
+
+      // If we're in a recursive call, stop at the end of our section
+      if (startIndex > 0 && i >= lines.length) {
+        break;
+      }
     }
   }
 
